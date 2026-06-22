@@ -22,24 +22,28 @@ public class TourRouteService {
     private final TourRouteRepository tourRouteRepository;
     private final RegistrationRepository registrationRepository;
 
+    @Transactional(readOnly = true)
     public List<TourRouteDTO> getAllTours() {
         return tourRouteRepository.findAll().stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<TourRouteDTO> getToursByStatus(TourRoute.TourStatus status) {
         return tourRouteRepository.findByStatus(status).stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<TourRouteDTO> getUpcomingPendingTours() {
         return tourRouteRepository.findUpcomingPendingTours(LocalDate.now()).stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public TourRouteDTO getTourById(Long id) {
         TourRoute tour = tourRouteRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("TourRoute", id));

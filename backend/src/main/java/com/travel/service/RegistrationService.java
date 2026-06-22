@@ -11,7 +11,6 @@ import com.travel.repository.RegistrationRepository;
 import com.travel.repository.TourRouteRepository;
 import com.travel.repository.TouristRepository;
 import com.travel.strategy.GroupFormationStrategy;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,34 +20,46 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class RegistrationService {
 
     private final RegistrationRepository registrationRepository;
     private final TourRouteRepository tourRouteRepository;
     private final TouristRepository touristRepository;
-
-    @Qualifier("minPeopleGroupFormationStrategy")
     private final GroupFormationStrategy groupFormationStrategy;
 
+    public RegistrationService(
+            RegistrationRepository registrationRepository,
+            TourRouteRepository tourRouteRepository,
+            TouristRepository touristRepository,
+            @Qualifier("minPeopleGroupFormationStrategy") GroupFormationStrategy groupFormationStrategy) {
+        this.registrationRepository = registrationRepository;
+        this.tourRouteRepository = tourRouteRepository;
+        this.touristRepository = touristRepository;
+        this.groupFormationStrategy = groupFormationStrategy;
+    }
+
+    @Transactional(readOnly = true)
     public List<RegistrationDTO> getRegistrationsByTourRoute(Long tourRouteId) {
         return registrationRepository.findByTourRouteId(tourRouteId).stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<RegistrationDTO> getActiveRegistrationsByTourRoute(Long tourRouteId) {
         return registrationRepository.findActiveRegistrationsByTourRouteId(tourRouteId).stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<RegistrationDTO> getRegistrationsByTourist(Long touristId) {
         return registrationRepository.findByTouristId(touristId).stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public RegistrationDTO getRegistrationById(Long id) {
         Registration registration = registrationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Registration", id));

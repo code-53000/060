@@ -24,33 +24,40 @@ public class GuideService {
     private final GuideRepository guideRepository;
     private final TourRouteRepository tourRouteRepository;
 
+    @Transactional(readOnly = true)
     public List<GuideDTO> getAllGuides() {
         return guideRepository.findAll().stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<GuideDTO> getActiveGuides() {
         return guideRepository.findByActiveTrue().stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<GuideDTO> getAvailableGuides(LocalDate from, LocalDate to) {
         if (from == null || to == null) {
             return getActiveGuides();
         }
-        return guideRepository.findAvailableGuidesBetweenDates(from, to).stream()
+        List<Guide> allActive = guideRepository.findByActiveTrue();
+        return allActive.stream()
+                .filter(guide -> isGuideAvailableInternal(guide, from, to, null))
                 .map(this::toDTO)
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<GuideDTO> getGuidesByLanguages(Set<String> languages) {
         return guideRepository.findByLanguagesIn(languages).stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public GuideDTO getGuideById(Long id) {
         Guide guide = guideRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Guide", id));
@@ -107,12 +114,15 @@ public class GuideService {
     public boolean isGuideAvailable(Long guideId, LocalDate from, LocalDate to, Long excludeTourId) {
         Guide guide = guideRepository.findById(guideId)
                 .orElseThrow(() -> new ResourceNotFoundException("Guide", guideId));
+        return isGuideAvailableInternal(guide, from, to, excludeTourId);
+    }
 
+    private boolean isGuideAvailableInternal(Guide guide, LocalDate from, LocalDate to, Long excludeTourId) {
         if (!guide.getActive()) {
             return false;
         }
 
-        List<TourRoute> assignedTours = tourRouteRepository.findByAssignedGuideId(guideId);
+        List<TourRoute> assignedTours = tourRouteRepository.findByAssignedGuideId(guide.getId());
         for (TourRoute tour : assignedTours) {
             if (excludeTourId != null && tour.getId().equals(excludeTourId)) {
                 continue;

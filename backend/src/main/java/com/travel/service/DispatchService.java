@@ -75,6 +75,7 @@ public class DispatchService {
         return tourRouteService.getTourById(saved.getId());
     }
 
+    @Transactional(readOnly = true)
     public List<GuideDTO> getAvailableGuidesForTour(Long tourRouteId) {
         TourRoute tourRoute = tourRouteRepository.findById(tourRouteId)
                 .orElseThrow(() -> new ResourceNotFoundException("TourRoute", tourRouteId));
@@ -82,12 +83,13 @@ public class DispatchService {
         return guideService.getAvailableGuides(tourRoute.getDepartureDate(), tourRoute.getReturnDate());
     }
 
+    @Transactional(readOnly = true)
     public List<TourRouteDTO> getToursNeedingGuide() {
         return tourRouteRepository.findByStatusIn(
                 List.of(TourRoute.TourStatus.PENDING, TourRoute.TourStatus.CONFIRMED)
         ).stream()
                 .filter(t -> t.getAssignedGuide() == null)
-                .map(tourRouteService::getTourById)
+                .map(t -> tourRouteService.getTourById(t.getId()))
                 .collect(Collectors.toList());
     }
 }
