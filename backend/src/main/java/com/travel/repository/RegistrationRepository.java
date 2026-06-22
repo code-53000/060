@@ -19,6 +19,8 @@ public interface RegistrationRepository extends JpaRepository<Registration, Long
 
     List<Registration> findByTourRouteIdAndStatusIn(Long tourRouteId, List<Registration.RegistrationStatus> statuses);
 
+    boolean existsByTourRouteIdAndTouristIdAndStatusIn(Long tourRouteId, Long touristId, List<Registration.RegistrationStatus> statuses);
+
     @Query("SELECT COALESCE(SUM(r.peopleCount), 0) FROM Registration r " +
            "WHERE r.tourRoute.id = :tourRouteId AND r.status IN ('PENDING', 'CONFIRMED')")
     Integer countConfirmedPeopleByTourRouteId(@Param("tourRouteId") Long tourRouteId);

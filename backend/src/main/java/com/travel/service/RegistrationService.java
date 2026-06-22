@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -85,6 +86,15 @@ public class RegistrationService {
 
         Tourist tourist = findOrCreateTourist(request);
 
+        boolean alreadyRegistered = registrationRepository.existsByTourRouteIdAndTouristIdAndStatusIn(
+                request.getTourRouteId(),
+                tourist.getId(),
+                Arrays.asList(Registration.RegistrationStatus.PENDING, Registration.RegistrationStatus.CONFIRMED)
+        );
+        if (alreadyRegistered) {
+            throw new BusinessException("该游客已在此线路报名，请勿重复报名");
+        }
+
         Registration registration = new Registration();
         registration.setTourRoute(tourRoute);
         registration.setTourist(tourist);
@@ -110,10 +120,16 @@ public class RegistrationService {
             throw new BusinessException("只有待确认的报名才能确认");
         }
 
+        TourRoute tourRoute = registration.getTourRoute();
+        int currentRegistered = registrationRepository.countConfirmedPeopleByTourRouteId(tourRoute.getId());
+        if (currentRegistered + registration.getPeopleCount() > tourRoute.getMaxPeople()) {
+            throw new BusinessException("确认后将超过最大人数限制，当前已确认: " + currentRegistered + ", 最大人数: " + tourRoute.getMaxPeople());
+        }
+
         registration.setStatus(Registration.RegistrationStatus.CONFIRMED);
         Registration saved = registrationRepository.save(registration);
 
-        checkAndFormGroup(registration.getTourRoute());
+        checkAndFormGroup(tourRoute);
 
         return toDTO(saved);
     }
